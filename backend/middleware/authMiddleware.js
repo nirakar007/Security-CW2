@@ -1,0 +1,1 @@
+// Verifies JWT to protect routes

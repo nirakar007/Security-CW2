@@ -1,0 +1,1 @@
+// Configures 'multer' for handling file uploads
