@@ -1,0 +1,1 @@
+// Schema for logging important actions

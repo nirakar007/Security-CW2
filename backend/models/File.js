@@ -1,0 +1,1 @@
+// Schema for file metadata (owner, path, uniqueId)
