@@ -1,0 +1,1 @@
+// A simple hook to access AuthContext easily
