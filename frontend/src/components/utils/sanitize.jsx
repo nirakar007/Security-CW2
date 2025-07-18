@@ -1,0 +1,1 @@
+// For using libraries like DOMPurify to prevent XSS
