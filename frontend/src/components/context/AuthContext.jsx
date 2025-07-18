@@ -1,0 +1,1 @@
+// Manages user auth state, role, etc.
