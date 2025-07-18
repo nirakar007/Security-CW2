@@ -1,0 +1,1 @@
+// A wrapper to protect pages based on auth status
