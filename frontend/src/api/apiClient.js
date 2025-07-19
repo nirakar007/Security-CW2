@@ -1,4 +1,12 @@
 // Centralizes all communication with your backend
 
-// in this file, 
+// in this file,
 // Pre-configured Axios instance
+import axios from "axios";
+
+const apiClient = axios.create({
+  baseURL: process.env.REACT_APP_API_URL || "http://localhost:5001/api",
+  withCredentials: true, // This is CRITICAL for sending/receiving HttpOnly cookies
+});
+
+export default apiClient;
