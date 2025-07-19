@@ -2,30 +2,29 @@
 
 const express = require("express");
 const cors = require("cors");
-const mongoose = require("mongoose");
-
 require("dotenv").config();
+const connectDB = require("./config/db");
+
+// Connect to Database
+connectDB();
 
 const app = express();
-const port = process.env.PORT || 5000;
 
-// Middleware
-app.use(cors());
-app.use(express.json());
+// Init Middleware
+app.use(
+  cors({
+    origin: "http://localhost:3000", // Allow only your React app to connect
+    credentials: true,
+  })
+);
+app.use(express.json({ extended: false }));
 
-// MongoDB connection
-const uri = process.env.MONGODB_URI;
-mongoose.connect(uri, {
-  useNewUrlParser: true,
-  useUnifiedTopology: true,
-});
+app.get("/", (req, res) => res.send("API Running"));
 
-const connection = mongoose.connection;
-connection.once("open", () => {
-  console.log("MongoDB database connection established successfully");
-});
+// Define Routes (we will add these later)
+// app.use('/api/auth', require('./routes/authRoutes'));
+// app.use('/api/files', require('./routes/fileRoutes'));
 
-// Start server
-app.listen(port, () => {
-  console.log(`Server is running on port: ${port}`);
-});
+const PORT = process.env.PORT || 5001;
+
+app.listen(PORT, () => console.log(`Server started on port ${PORT}`));
