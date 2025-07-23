@@ -1,5 +1,7 @@
 import { Lock, Mail } from "lucide-react";
 import { useEffect, useState } from "react";
+import { Link, useLocation, useNavigate } from "react-router-dom"; // Import useLocation
+import apiClient from "../../api/apiClient"; // Import our API client
 
 function Spinner() {
   return (
@@ -11,32 +13,59 @@ function LoginPage() {
   const [formData, setFormData] = useState({ email: "", password: "" });
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState("");
+  const [successMessage, setSuccessMessage] = useState(""); // For registration success message
   const [isMounted, setIsMounted] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
+
+  const navigate = useNavigate();
+  const location = useLocation(); // Hook to access route state
 
   useEffect(() => {
     setIsMounted(true);
-  }, []);
+    // Check if we were redirected from the registration page
+    if (location.state?.message) {
+      setSuccessMessage(location.state.message);
+      // Optional: Clear the message after a few seconds
+      const timer = setTimeout(() => setSuccessMessage(""), 5000);
+      // Clear the state from history so the message doesn't reappear on back navigation
+      window.history.replaceState({}, document.title);
+      return () => clearTimeout(timer);
+    }
+  }, [location]);
 
   const { email, password } = formData;
 
-  const onChange = (e) =>
+  const onChange = (e) => {
+    setError(""); // Clear errors on new input
     setFormData({ ...formData, [e.target.name]: e.target.value });
+  };
 
   const onSubmit = async (e) => {
     e.preventDefault();
     setIsLoading(true);
     setError("");
-    // Simulate API call
-    await new Promise((resolve) => setTimeout(resolve, 1500));
-    if (password !== "password") {
-      setError("Invalid credentials. Please try again.");
+    setSuccessMessage(""); // Clear success message on new attempt
+
+    try {
+      // --- THIS IS THE REAL API CALL ---
+      const response = await apiClient.post("/auth/login", { email, password });
+
+      // On successful login, the user will be redirected.
+      // We will handle this with AuthContext in the next step.
+      // For now, let's just log the success and navigate to a placeholder dashboard.
+      console.log("Login successful:", response.data);
+      navigate("/dashboard"); // Navigate to the dashboard
+    } catch (err) {
+      // Set error message from the server's response
+      setError(err.response?.data?.msg || "An unknown login error occurred.");
+    } finally {
+      setIsLoading(false);
     }
-    setIsLoading(false);
   };
 
   return (
     <div className="relative flex items-center justify-center min-h-screen px-4 py-12 overflow-hidden bg-gradient-to-br from-slate-900 via-gray-900 to-slate-900">
-      {/* Animated Background Elements */}
+      {/* ... (The rest of your beautiful UI code is unchanged) ... */}
       <div className="absolute top-20 -left-32 w-96 h-96 bg-gradient-to-br from-blue-500 to-purple-600 opacity-20 rounded-full animate-pulse"></div>
       <div
         className="absolute bottom-20 -right-32 w-80 h-80 bg-gradient-to-tr from-violet-500 to-pink-500 opacity-25 rounded-full animate-bounce"
@@ -46,8 +75,6 @@ function LoginPage() {
         className="absolute top-1/2 left-1/4 w-64 h-64 bg-gradient-to-bl from-cyan-400 to-blue-600 opacity-15 rounded-full animate-ping"
         style={{ animationDuration: "4s" }}
       ></div>
-
-      {/* Subtle Grid Pattern */}
       <div
         className="absolute inset-0 opacity-5"
         style={{
@@ -63,7 +90,6 @@ function LoginPage() {
             : "opacity-0 translate-y-8 scale-95"
         }`}
       >
-        {/* Header */}
         <div className="text-center space-y-3">
           <div className="inline-block p-4 rounded-full bg-gradient-to-br from-blue-500/20 to-purple-600/20 mb-4 animate-pulse">
             <Lock className="h-8 w-8 text-blue-400" />
@@ -76,8 +102,16 @@ function LoginPage() {
           </p>
         </div>
 
-        <div className="space-y-6">
-          {/* Email Input */}
+        {/* Success Message Display */}
+        {successMessage && !error && (
+          <div className="p-4 bg-green-500/10 border border-green-500/30 rounded-xl text-center">
+            <p className="text-green-300 text-sm font-medium">
+              {successMessage}
+            </p>
+          </div>
+        )}
+
+        <form onSubmit={onSubmit} className="space-y-6">
           <div className="space-y-2">
             <label className="text-sm font-medium text-slate-300 ml-1">
               Email Address
@@ -97,8 +131,6 @@ function LoginPage() {
               />
             </div>
           </div>
-
-          {/* Password Input */}
           <div className="space-y-2">
             <label className="text-sm font-medium text-slate-300 ml-1">
               Password
@@ -109,19 +141,25 @@ function LoginPage() {
               </div>
               <input
                 name="password"
-                type="password"
+                type={showPassword ? "text" : "password"}
                 required
-                className="w-full pl-12 pr-4 py-4 bg-white/5 text-white border border-white/20 rounded-xl focus:outline-none focus:bg-white/10 focus:border-blue-400/80 focus:ring-4 focus:ring-blue-400/10 transition-all duration-300 placeholder:text-slate-400 text-sm font-medium"
+                className="w-full pl-12 pr-16 py-4 bg-white/5 text-white border border-white/20 rounded-xl focus:outline-none focus:bg-white/10 focus:border-blue-400/80 focus:ring-4 focus:ring-blue-400/10 transition-all duration-300 placeholder:text-slate-400 text-sm font-medium"
                 placeholder="Enter your password"
                 value={password}
                 onChange={onChange}
               />
+              <button
+                type="button"
+                onClick={() => setShowPassword(!showPassword)}
+                className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 hover:text-white font-semibold text-xs transition-colors"
+              >
+                {showPassword ? "HIDE" : "SHOW"}
+              </button>
             </div>
           </div>
 
-          {/* Error Display */}
           {error && (
-            <div className="relative overflow-hidden p-4 bg-red-500/10 border border-red-500/30 rounded-xl animate-shake">
+            <div className="relative overflow-hidden p-4 bg-red-500/10 border border-red-500/30 rounded-xl">
               <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/5 to-transparent animate-pulse"></div>
               <p className="relative text-red-300 text-sm font-medium text-center">
                 {error}
@@ -129,10 +167,9 @@ function LoginPage() {
             </div>
           )}
 
-          {/* Submit Button */}
           <div className="pt-2">
             <button
-              onClick={onSubmit}
+              type="submit"
               disabled={isLoading}
               className="group w-full flex justify-center items-center py-4 px-6 border-0 text-sm font-bold rounded-xl text-white bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 focus:outline-none focus:ring-4 focus:ring-blue-500/30 disabled:opacity-50 disabled:cursor-not-allowed transform transition-all duration-300 ease-out shadow-lg hover:shadow-xl hover:-translate-y-0.5 hover:shadow-blue-500/25"
             >
@@ -144,18 +181,17 @@ function LoginPage() {
               </span>
             </button>
           </div>
-        </div>
+        </form>
 
-        {/* Footer */}
         <div className="pt-6 border-t border-white/10">
           <p className="text-center text-sm text-slate-400">
             Don't have an account?{" "}
-            <button className="font-semibold text-blue-400 hover:text-blue-300 transition-colors duration-200 hover:underline">
+            <Link
+              to="/register"
+              className="font-semibold text-blue-400 hover:text-blue-300 transition-colors duration-200 hover:underline"
+            >
               Create Account
-            </button>
-          </p>
-          <p className="text-center text-xs text-slate-500 mt-3">
-            Demo: any email / password
+            </Link>
           </p>
         </div>
       </div>
