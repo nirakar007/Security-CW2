@@ -29,6 +29,14 @@ const UserSchema = new mongoose.Schema(
     passwordHistory: {
       type: [String], // Array of previous password hashes
     },
+    failedLoginAttempts: {
+      type: Number,
+      required: true,
+      default: 0,
+    },
+    lockoutUntil: {
+      type: Date,
+    },
   },
   { timestamps: true }
 ); // Adds createdAt and updatedAt fields
