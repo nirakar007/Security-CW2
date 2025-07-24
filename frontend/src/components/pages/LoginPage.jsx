@@ -2,6 +2,7 @@ import { Lock, Mail } from "lucide-react";
 import { useEffect, useState } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom"; // Import useLocation
 import apiClient from "../../api/apiClient"; // Import our API client
+import { useAuth } from "../context/AuthContext";
 
 function Spinner() {
   return (
@@ -18,6 +19,7 @@ function LoginPage() {
   const [showPassword, setShowPassword] = useState(false);
 
   const navigate = useNavigate();
+  const { login } = useAuth();
   const location = useLocation(); // Hook to access route state
 
   useEffect(() => {
@@ -47,17 +49,13 @@ function LoginPage() {
     setSuccessMessage(""); // Clear success message on new attempt
 
     try {
-      // --- THIS IS THE REAL API CALL ---
       const response = await apiClient.post("/auth/login", { email, password });
-
-      // On successful login, the user will be redirected.
-      // We will handle this with AuthContext in the next step.
-      // For now, let's just log the success and navigate to a placeholder dashboard.
-      console.log("Login successful:", response.data);
-      navigate("/dashboard"); // Navigate to the dashboard
+      // The "me" endpoint returns the full user data, let's use that
+      const { data: userData } = await apiClient.get("/auth/me");
+      login(userData); // Update the global state
+      navigate("/dashboard"); // Redirect to dashboard on success
     } catch (err) {
-      // Set error message from the server's response
-      setError(err.response?.data?.msg || "An unknown login error occurred.");
+      setError(err.response?.data?.msg || "Login failed. Please try again.");
     } finally {
       setIsLoading(false);
     }
