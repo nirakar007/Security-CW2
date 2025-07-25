@@ -37,6 +37,12 @@ const UserSchema = new mongoose.Schema(
     lockoutUntil: {
       type: Date,
     },
+    otp: {
+      type: String,
+    },
+    otpExpires: {
+      type: Date,
+    },
   },
   { timestamps: true }
 ); // Adds createdAt and updatedAt fields

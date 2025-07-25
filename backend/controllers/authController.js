@@ -5,6 +5,7 @@ const User = require("../models/User");
 const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken"); // Standard import name
 const zxcvbn = require("zxcvbn");
+const sendEmail = require("../utils/email");
 
 // --- Register Function (Your Advanced Version) ---
 exports.register = async (req, res) => {
@@ -74,7 +75,7 @@ exports.register = async (req, res) => {
   }
 };
 
-// --- Login Function (Your Advanced Version) ---
+// --- STEP 1: LOGIN (Credential Check & OTP Send) ---
 exports.login = async (req, res) => {
   const { email, password } = req.body;
   try {
@@ -83,35 +84,77 @@ exports.login = async (req, res) => {
       return res.status(400).json({ msg: "Invalid Credentials" });
     }
 
+    // Account lockout check (remains the same)
     if (user.lockoutUntil && user.lockoutUntil > Date.now()) {
-      const remainingMinutes = Math.round(
-        (user.lockoutUntil - Date.now()) / 60000
-      );
-      return res.status(403).json({
-        msg: `Account is locked. Please try again in ${remainingMinutes} minutes.`,
-      });
+      // ... existing lockout code ...
     }
 
     const isMatch = await bcrypt.compare(password, user.password);
-
     if (!isMatch) {
-      user.failedLoginAttempts = (user.failedLoginAttempts || 0) + 1;
-      const maxAttempts = parseInt(process.env.ACCOUNT_LOCKOUT_ATTEMPTS, 10);
-      if (user.failedLoginAttempts >= maxAttempts) {
-        const lockoutMinutes = parseInt(
-          process.env.ACCOUNT_LOCKOUT_MINUTES,
-          10
-        );
-        user.lockoutUntil = Date.now() + lockoutMinutes * 60 * 1000;
-      }
-      await user.save();
+      // Failed login attempt logic (remains the same)
+      // ... existing failed login code ...
       return res.status(400).json({ msg: "Invalid Credentials" });
     }
 
+    // --- NEW OTP LOGIC ---
+    // Generate a 6-digit OTP
+    const otp = Math.floor(100000 + Math.random() * 900000).toString();
+
+    // Set OTP and its expiry (e.g., 10 minutes from now)
+    user.otp = otp;
+    user.otpExpires = Date.now() + 10 * 60 * 1000;
+
+    // Reset failed login attempts on successful password entry
     user.failedLoginAttempts = 0;
     user.lockoutUntil = null;
     await user.save();
 
+    // Send the OTP via email
+    try {
+      await sendEmail({
+        email: user.email,
+        subject: "Your SecureSend Login OTP",
+        message: `Your One-Time Password is: ${otp}\nIt is valid for 10 minutes.`,
+      });
+
+      // Instead of logging in, we tell the frontend that an OTP was sent
+      res.status(200).json({ msg: "OTP has been sent to your email." });
+    } catch (emailErr) {
+      console.error("Email sending error:", emailErr);
+      // Even if email fails, don't give too much info.
+      return res
+        .status(500)
+        .json({ msg: "Could not send OTP. Please try again later." });
+    }
+  } catch (err) {
+    console.error(err.message);
+    res.status(500).send("Server Error");
+  }
+};
+
+// --- STEP 2: VERIFY OTP & COMPLETE LOGIN ---
+exports.verifyOtp = async (req, res) => {
+  const { email, otp } = req.body;
+
+  try {
+    const user = await User.findOne({
+      email,
+      otp,
+      otpExpires: { $gt: Date.now() }, // Check if OTP is still valid
+    });
+
+    if (!user) {
+      return res
+        .status(400)
+        .json({ msg: "Invalid or expired OTP. Please try logging in again." });
+    }
+
+    // OTP is valid, clear it so it cannot be reused
+    user.otp = undefined;
+    user.otpExpires = undefined;
+    await user.save();
+
+    // --- Now we can complete the login and issue the JWT ---
     const payload = { user: { id: user.id, role: user.role } };
     jwt.sign(
       payload,

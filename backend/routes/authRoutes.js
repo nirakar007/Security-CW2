@@ -3,6 +3,7 @@ const express = require("express");
 const router = express.Router();
 const authMiddleware = require("../middleware/authMiddleware");
 const User = require("../models/User");
+const { verifyOtp } = require("../controllers/authController");
 
 // Import both register and login from the controller
 const { register, login } = require("../controllers/authController");
@@ -28,5 +29,9 @@ router.get("/me", authMiddleware, async (req, res) => {
     res.status(500).send("Server Error");
   }
 });
+
+// @route   POST /api/auth/verify-otp
+// @desc    Verifies the OTP and completes login
+router.post("/verify-otp", verifyOtp);
 
 module.exports = router;
