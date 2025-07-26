@@ -5,7 +5,7 @@ import apiClient from "../../api/apiClient"; // We need our axios instance
 const AuthContext = createContext(null);
 
 export const useAuth = () => useContext(AuthContext);
-
+  
 export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
   const [isLoading, setIsLoading] = useState(true); // Start as true to check auth status
@@ -32,8 +32,14 @@ export const AuthProvider = ({ children }) => {
   };
 
   const logout = async () => {
-    // await apiClient.post('/auth/logout'); // Tell backend to clear cookie
-    setUser(null);
+    try {
+      await apiClient.post("/auth/logout"); // Call the backend endpoint
+    } catch (error) {
+      console.error("Logout failed", error);
+    } finally {
+      // This runs regardless of whether the API call succeeded or failed
+      setUser(null);
+    }
   };
 
   const value = { user, isLoading, login, logout };

@@ -1,10 +1,10 @@
-import { Lock, Mail, ShieldCheck } from "lucide-react";
+import { Lock, Mail, ShieldCheck, Timer } from "lucide-react"; // Added Timer icon
 import { useEffect, useState } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import apiClient from "../../api/apiClient";
 import { useAuth } from "../context/authContext";
 
-// Spinner component remains the same
+// Spinner component for loading states
 function Spinner() {
   return (
     <div className="inline-block animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
@@ -13,7 +13,7 @@ function Spinner() {
 
 function LoginPage() {
   // --- STATE MANAGEMENT ---
-  const [loginStep, setLoginStep] = useState("credentials"); // 'credentials' or 'otp'
+  const [loginStep, setLoginStep] = useState("credentials");
   const [formData, setFormData] = useState({
     email: "",
     password: "",
@@ -25,11 +25,44 @@ function LoginPage() {
   const [isMounted, setIsMounted] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
 
+  // --- NEW STATE for account lockout ---
+  const [lockout, setLockout] = useState({ isLocked: false, endTime: null });
+  const [lockoutTimer, setLockoutTimer] = useState("");
+
   // --- HOOKS ---
   const navigate = useNavigate();
   const { login } = useAuth();
   const location = useLocation();
 
+  // --- NEW useEffect for the lockout timer ---
+  useEffect(() => {
+    let interval;
+    if (lockout.isLocked && lockout.endTime) {
+      interval = setInterval(() => {
+        const now = Date.now();
+        const remaining = lockout.endTime - now;
+
+        if (remaining <= 0) {
+          clearInterval(interval);
+          setLockout({ isLocked: false, endTime: null });
+          setError(""); // Clear the lockout error message
+          setLockoutTimer("");
+        } else {
+          const minutes = Math.floor((remaining / 1000 / 60) % 60);
+          const seconds = Math.floor((remaining / 1000) % 60);
+          setLockoutTimer(
+            `${minutes.toString().padStart(2, "0")}:${seconds
+              .toString()
+              .padStart(2, "0")}`
+          );
+        }
+      }, 1000);
+    }
+    // Cleanup function to clear the interval when the component unmounts or state changes
+    return () => clearInterval(interval);
+  }, [lockout]);
+
+  // Existing useEffect for mount animation and success messages
   useEffect(() => {
     setIsMounted(true);
     if (location.state?.message) {
@@ -46,7 +79,7 @@ function LoginPage() {
     setFormData({ ...formData, [e.target.name]: e.target.value });
   };
 
-  // Step 1: Submit email and password to get an OTP
+  // Step 1: Submit email and password
   const handleCredentialSubmit = async (e) => {
     e.preventDefault();
     setIsLoading(true);
@@ -58,15 +91,24 @@ function LoginPage() {
         email: formData.email,
         password: formData.password,
       });
-      setLoginStep("otp"); // On success, switch to the OTP view
+      setLoginStep("otp");
     } catch (err) {
-      setError(err.response?.data?.msg || "Login failed. Please try again.");
+      const errorData = err.response?.data;
+      setError(errorData?.msg || "Login failed. Please try again.");
+
+      // Check for lockout data in the error response and set the state
+      if (errorData?.lockoutUntil) {
+        setLockout({
+          isLocked: true,
+          endTime: new Date(errorData.lockoutUntil).getTime(),
+        });
+      }
     } finally {
       setIsLoading(false);
     }
   };
 
-  // Step 2: Submit the OTP to complete login
+  // Step 2: Submit OTP
   const handleOtpSubmit = async (e) => {
     e.preventDefault();
     setIsLoading(true);
@@ -78,8 +120,8 @@ function LoginPage() {
         otp: formData.otp,
       });
       const { data: userData } = await apiClient.get("/auth/me");
-      login(userData); // Update the global state
-      navigate("/dashboard"); // Redirect to dashboard on final success
+      login(userData);
+      navigate("/dashboard");
     } catch (err) {
       setError(err.response?.data?.msg || "OTP verification failed.");
     } finally {
@@ -90,7 +132,6 @@ function LoginPage() {
   // --- RENDER LOGIC ---
   const renderCredentialForm = () => (
     <form onSubmit={handleCredentialSubmit} className="space-y-6">
-      {/* Email Input */}
       <div className="space-y-2">
         <label className="text-sm font-medium text-slate-300 ml-1">
           Email Address
@@ -110,7 +151,6 @@ function LoginPage() {
           />
         </div>
       </div>
-      {/* Password Input */}
       <div className="space-y-2">
         <label className="text-sm font-medium text-slate-300 ml-1">
           Password
@@ -137,17 +177,21 @@ function LoginPage() {
           </button>
         </div>
       </div>
-      {/* Submit Button */}
       <div className="pt-2">
         <button
           type="submit"
-          disabled={isLoading}
+          disabled={isLoading || lockout.isLocked} // Disable button during lockout
           className="group w-full flex justify-center items-center py-4 px-6 border-0 text-sm font-bold rounded-xl text-white bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 focus:outline-none focus:ring-4 focus:ring-blue-500/30 disabled:opacity-50 disabled:cursor-not-allowed transform transition-all duration-300 ease-out shadow-lg hover:shadow-xl hover:-translate-y-0.5 hover:shadow-blue-500/25"
         >
           <span className="flex items-center gap-3">
             {isLoading && <Spinner />}
+            {lockout.isLocked && !isLoading && <Timer className="h-4 w-4" />}
             <span className="font-semibold tracking-wide">
-              {isLoading ? "Requesting OTP..." : "Continue"}
+              {isLoading
+                ? "Requesting OTP..."
+                : lockout.isLocked
+                ? `Try Again in ${lockoutTimer}`
+                : "Continue"}
             </span>
           </span>
         </button>
@@ -178,7 +222,6 @@ function LoginPage() {
           />
         </div>
       </div>
-      {/* Submit Button */}
       <div className="pt-2">
         <button
           type="submit"
@@ -207,7 +250,6 @@ function LoginPage() {
 
   return (
     <div className="relative flex items-center justify-center min-h-screen px-4 py-12 overflow-hidden bg-gradient-to-br from-slate-900 via-gray-900 to-slate-900">
-      {/* Decorative background elements remain unchanged */}
       <div className="absolute top-20 -left-32 w-96 h-96 bg-gradient-to-br from-blue-500 to-purple-600 opacity-20 rounded-full animate-pulse"></div>
       <div
         className="absolute bottom-20 -right-32 w-80 h-80 bg-gradient-to-tr from-violet-500 to-pink-500 opacity-25 rounded-full animate-bounce"
@@ -225,7 +267,6 @@ function LoginPage() {
         }}
       />
 
-      {/* Main card container remains unchanged */}
       <div
         className={`w-full max-w-md p-10 space-y-8 bg-white/5 backdrop-blur-xl border border-white/10 rounded-3xl shadow-2xl z-10 transform transition-all duration-1000 ease-out ${
           isMounted
@@ -233,7 +274,6 @@ function LoginPage() {
             : "opacity-0 translate-y-8 scale-95"
         }`}
       >
-        {/* Header section now conditionally changes */}
         <div className="text-center space-y-3">
           <div className="inline-block p-4 rounded-full bg-gradient-to-br from-blue-500/20 to-purple-600/20 mb-4 animate-pulse">
             {loginStep === "credentials" ? (
@@ -252,7 +292,6 @@ function LoginPage() {
           </p>
         </div>
 
-        {/* Success message only shows on the first step */}
         {loginStep === "credentials" && successMessage && !error && (
           <div className="p-4 bg-green-500/10 border border-green-500/30 rounded-xl text-center">
             <p className="text-green-300 text-sm font-medium">
@@ -261,10 +300,8 @@ function LoginPage() {
           </div>
         )}
 
-        {/* This is where the magic happens: we render the correct form based on the state */}
         {loginStep === "credentials" ? renderCredentialForm() : renderOtpForm()}
 
-        {/* The error message is shared and displayed for both steps */}
         {error && (
           <div className="relative overflow-hidden p-4 bg-red-500/10 border border-red-500/30 rounded-xl">
             <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/5 to-transparent animate-pulse"></div>
@@ -274,7 +311,6 @@ function LoginPage() {
           </div>
         )}
 
-        {/* The link to the register page only shows on the first step */}
         {loginStep === "credentials" && (
           <div className="pt-6 border-t border-white/10">
             <p className="text-center text-sm text-slate-400">
