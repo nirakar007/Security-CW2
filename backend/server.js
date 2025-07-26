@@ -3,11 +3,14 @@ const cors = require("cors");
 const cookieParser = require("cookie-parser"); // <-- 1. IMPORT IT HERE
 require("dotenv").config();
 const connectDB = require("./config/db");
+const helmet = require("helmet");
+
 
 // Connect to Database
 connectDB();
 
 const app = express();
+app.use(helmet()); // <-- Using helmet to set secure HTTP headers
 
 // Init Middleware
 app.use(cookieParser()); 

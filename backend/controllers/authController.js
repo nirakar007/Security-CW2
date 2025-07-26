@@ -3,7 +3,7 @@
 // --- Standardized Imports at the Top ---
 const User = require("../models/User");
 const bcrypt = require("bcryptjs");
-const jwt = require("jsonwebtoken"); // Standard import name
+const jwt = require("jsonwebtoken");
 const zxcvbn = require("zxcvbn");
 const sendEmail = require("../utils/email");
 
@@ -79,52 +79,83 @@ exports.register = async (req, res) => {
 exports.login = async (req, res) => {
   const { email, password } = req.body;
   try {
+    // 1. Find the user first
     const user = await User.findOne({ email });
     if (!user) {
       return res.status(400).json({ msg: "Invalid Credentials" });
     }
 
-    // Account lockout check (remains the same)
+    // 2. Check for an ACTIVE lockout immediately after finding the user
     if (user.lockoutUntil && user.lockoutUntil > Date.now()) {
-      // ... existing lockout code ...
-    }
-
-    const isMatch = await bcrypt.compare(password, user.password);
-    if (!isMatch) {
-      // Failed login attempt logic (remains the same)
-      // ... existing failed login code ...
-      return res.status(400).json({ msg: "Invalid Credentials" });
-    }
-
-    // --- NEW OTP LOGIC ---
-    // Generate a 6-digit OTP
-    const otp = Math.floor(100000 + Math.random() * 900000).toString();
-
-    // Set OTP and its expiry (e.g., 10 minutes from now)
-    user.otp = otp;
-    user.otpExpires = Date.now() + 10 * 60 * 1000;
-
-    // Reset failed login attempts on successful password entry
-    user.failedLoginAttempts = 0;
-    user.lockoutUntil = null;
-    await user.save();
-
-    // Send the OTP via email
-    try {
-      await sendEmail({
-        email: user.email,
-        subject: "Your SecureSend Login OTP",
-        message: `Your One-Time Password is: ${otp}\nIt is valid for 10 minutes.`,
+      return res.status(403).json({
+        msg: `Account is locked due to too many failed attempts.`,
+        lockoutUntil: user.lockoutUntil,
       });
+    }
 
-      // Instead of logging in, we tell the frontend that an OTP was sent
-      res.status(200).json({ msg: "OTP has been sent to your email." });
-    } catch (emailErr) {
-      console.error("Email sending error:", emailErr);
-      // Even if email fails, don't give too much info.
-      return res
-        .status(500)
-        .json({ msg: "Could not send OTP. Please try again later." });
+    // 3. Only if not locked out, compare the password
+    const isMatch = await bcrypt.compare(password, user.password);
+
+    if (isMatch) {
+      // --- PASSWORD IS CORRECT ---
+      // Reset any failed attempts and lockout from the past
+      user.failedLoginAttempts = 0;
+      user.lockoutUntil = null;
+
+      // Generate and send OTP
+      const otp = Math.floor(100000 + Math.random() * 900000).toString();
+      user.otp = otp;
+      user.otpExpires = Date.now() + 10 * 60 * 1000;
+
+      await user.save(); // Save the reset state and the new OTP
+
+      try {
+        await sendEmail({
+          email: user.email,
+          subject: "Your SecureSend Login OTP",
+          message: `Your One-Time Password is: ${otp}\nIt is valid for 10 minutes.`,
+        });
+        return res
+          .status(200)
+          .json({ msg: "OTP has been sent to your email." });
+      } catch (emailErr) {
+        console.error("Email sending error:", emailErr);
+        return res
+          .status(500)
+          .json({ msg: "Could not send OTP. Please try again later." });
+      }
+    } else {
+      // --- PASSWORD IS INCORRECT ---
+      const maxAttempts =
+        parseInt(process.env.ACCOUNT_LOCKOUT_ATTEMPTS, 10) || 3;
+
+      user.failedLoginAttempts = (user.failedLoginAttempts || 0) + 1;
+      const attemptsLeft = maxAttempts - user.failedLoginAttempts;
+
+      if (user.failedLoginAttempts >= maxAttempts) {
+        // Lock the account
+        const lockoutMinutes =
+          parseInt(process.env.ACCOUNT_LOCKOUT_MINUTES, 10) || 2;
+        const lockoutUntil = Date.now() + lockoutMinutes * 60 * 1000;
+        user.lockoutUntil = lockoutUntil;
+        await user.save();
+
+        return res.status(403).json({
+          msg: "Account locked.",
+          lockoutUntil: lockoutUntil,
+        });
+      } else {
+        // Just save the new attempt count
+        await user.save();
+        return res.status(400).json({
+          msg: `Invalid Credentials. ${
+            attemptsLeft > 0
+              ? `${attemptsLeft} attempts remaining.`
+              : "Final attempt."
+          }`,
+          attemptsLeft: attemptsLeft,
+        });
+      }
     }
   } catch (err) {
     console.error(err.message);
@@ -175,4 +206,16 @@ exports.verifyOtp = async (req, res) => {
     console.error(err.message);
     res.status(500).send("Server Error");
   }
+};
+
+// @desc    Log user out
+// @route   POST /api/auth/logout
+// @access  Private
+exports.logout = (req, res) => {
+  // Instruct the browser to clear the cookie by setting an expired one.
+  res.cookie("token", "none", {
+    expires: new Date(Date.now() + 10 * 1000), // Set expiry 10 seconds from now
+    httpOnly: true,
+  });
+  res.status(200).json({ success: true, data: {} });
 };
