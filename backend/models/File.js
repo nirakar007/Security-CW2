@@ -13,7 +13,15 @@ const FileSchema = new mongoose.Schema(
     filePath: { type: String, required: true },
     fileSize: { type: Number, required: true },
     mimeType: { type: String, required: true },
-    // We will add download link/expiry later
+    iv: { type: String, required: true },
+    downloadId: {
+      type: String,
+      unique: true,
+      sparse: true, // Allows multiple null values but unique if it exists
+    },
+    downloadExpires: {
+      type: Date,
+    },
   },
   { timestamps: true }
 );
