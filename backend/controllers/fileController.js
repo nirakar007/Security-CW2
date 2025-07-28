@@ -3,53 +3,72 @@ const crypto = require("crypto");
 const fs = require("fs");
 const path = require("path");
 const { v4: uuidv4 } = require("uuid");
+const axios = require("axios");
+const FormData = require("form-data");
 
+// @desc    Upload a file
+// @route   POST /api/files
+// @access  Private
 exports.uploadFile = async (req, res) => {
-  console.log(
-    "KEY_LENGTH:",
-    process.env.ENCRYPTION_KEY ? process.env.ENCRYPTION_KEY.length : "UNDEFINED"
-  );
   if (!req.file) {
     return res.status(400).json({ msg: "No file uploaded." });
   }
 
-  try {
-    // --- START ENCRYPTION PROCESS ---
+  const filePath = req.file.path;
 
-    // 1. Define encryption parameters
+  try {
+    // --- STEP 1: VIRUS SCANNING with Cloudmersive ---
+    const formData = new FormData();
+    formData.append("inputFile", fs.createReadStream(filePath));
+
+    const scanResponse = await axios.post(
+      "https://api.cloudmersive.com/virus/scan/file",
+      formData,
+      {
+        headers: {
+          ...formData.getHeaders(),
+          Apikey: process.env.CLOUDMERSIVE_API_KEY,
+        },
+      }
+    );
+
+    const scanResult = scanResponse.data;
+
+    if (!scanResult.CleanResult) {
+      fs.unlinkSync(filePath); // Delete the infected file immediately
+      const virusName =
+        scanResult.FoundViruses && scanResult.FoundViruses[0]
+          ? scanResult.FoundViruses[0].VirusName
+          : "Unknown";
+      return res.status(400).json({
+        msg: `Upload failed: Malicious file detected. (Virus: ${virusName})`,
+      });
+    }
+
+    // --- STEP 2: ENCRYPTION (only if scan is clean) ---
     const algorithm = "aes-256-gcm";
     const key = Buffer.from(process.env.ENCRYPTION_KEY, "utf-8");
-    const iv = crypto.randomBytes(16); // Generate a unique IV for each file
+    const iv = crypto.randomBytes(16);
 
-    // 2. Read the plaintext file that multer saved
-    const filePath = req.file.path;
     const fileBuffer = fs.readFileSync(filePath);
-
-    // 3. Create the cipher and encrypt the file content
     const cipher = crypto.createCipheriv(algorithm, key, iv);
     const encryptedBuffer = Buffer.concat([
       cipher.update(fileBuffer),
       cipher.final(),
     ]);
-
-    // 4. Get the auth tag (for authenticated encryption)
     const authTag = cipher.getAuthTag();
 
-    // 5. Overwrite the original plaintext file with the encrypted data
-    // We will store it as IV + AuthTag + EncryptedData
     fs.writeFileSync(filePath, Buffer.concat([iv, authTag, encryptedBuffer]));
 
-    // --- END ENCRYPTION PROCESS ---
-
-    // Save the metadata to the database
+    // --- STEP 3: DATABASE SAVE ---
     const newFile = new File({
       owner: req.user.id,
       originalName: req.file.originalname,
       storageName: req.file.filename,
-      filePath: req.file.path,
-      fileSize: req.file.size, // Note: This is the original size, which is fine
+      filePath: filePath,
+      fileSize: req.file.size,
       mimeType: req.file.mimetype,
-      iv: iv.toString("hex"), // Save the IV (as a hex string) so we can decrypt later
+      iv: iv.toString("hex"),
     });
 
     await newFile.save();
@@ -58,12 +77,19 @@ exports.uploadFile = async (req, res) => {
       .status(201)
       .json({ msg: "File uploaded and encrypted successfully", file: newFile });
   } catch (err) {
-    console.error(err.message);
-    // If something goes wrong, try to clean up the uploaded file
-    if (req.file) {
-      fs.unlinkSync(req.file.path);
+    console.error("Upload process failed:", err.message);
+
+    if (fs.existsSync(filePath)) {
+      fs.unlinkSync(filePath);
     }
-    res.status(500).send("Server Error");
+
+    if (err.response && err.response.data) {
+      return res
+        .status(500)
+        .json({ msg: `File scanning service error. Please try again later.` });
+    }
+
+    res.status(500).send("Server Error during file processing.");
   }
 };
 

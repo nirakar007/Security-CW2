@@ -2,6 +2,7 @@
 const multer = require("multer");
 const path = require("path");
 
+
 // Define storage configuration (we'll keep it simple for now)
 const storage = multer.diskStorage({
   destination: "./secure_uploads/", // IMPORTANT: This folder should be in your .gitignore!
