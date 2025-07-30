@@ -6,6 +6,7 @@ const UploadForm = ({ onUploadSuccess }) => {
   const [file, setFile] = useState(null);
   const [status, setStatus] = useState({ message: "", isError: false });
   const [isLoading, setIsLoading] = useState(false);
+  const [showUpgrade, setShowUpgrade] = useState(false);
 
   const onFileChange = (e) => {
     const selectedFile = e.target.files[0];
@@ -17,6 +18,8 @@ const UploadForm = ({ onUploadSuccess }) => {
 
   const onSubmit = async (e) => {
     e.preventDefault();
+    setShowUpgrade(false);
+
     if (!file) {
       setStatus({ message: "Please select a file first.", isError: true });
       return;
@@ -38,10 +41,14 @@ const UploadForm = ({ onUploadSuccess }) => {
       setFile(null);
       e.target.reset();
     } catch (err) {
+      const errorData = err.response?.data;
       setStatus({
         message: err.response?.data?.msg || "Upload failed. Please try again.",
         isError: true,
       });
+      if (errorData?.upgradeRequired) {
+        setShowUpgrade(true);
+      }
     } finally {
       setIsLoading(false);
     }
@@ -77,6 +84,16 @@ const UploadForm = ({ onUploadSuccess }) => {
           {isLoading ? "Uploading..." : "Upload"}
         </button>
       </form>
+      {showUpgrade && (
+        <div className="mt-4">
+          <p className="text-center text-sm text-yellow-400 mb-2">
+            Upgrade required for files over 10MB.
+          </p>
+          {/* Here you could link to a pricing page or directly trigger the payment flow */}
+          {/* For now, we'll just show the user needs to upgrade. */}
+          {/* In a real app, you would render the <UpgradeCard /> here or navigate. */}
+        </div>
+      )}
       {status.message && (
         <p
           className={`mt-4 text-center text-sm ${

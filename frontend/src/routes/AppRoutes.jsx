@@ -5,8 +5,9 @@ import ProtectedRoute from "../components/layout/ProtectedRoute";
 import DashboardPage from "../components/pages/DashboardPage";
 import HomePage from "../components/pages/HomePage";
 import LoginPage from "../components/pages/LoginPage";
+// import NotFoundPage from "../components/pages/NotFoundPage";
 import RegisterPage from "../components/pages/RegisterPage";
-// We can add a NotFoundPage for good measure later
+import SettingsPage from "../components/pages/SettingsPage";
 
 const AppRoutes = () => {
   return (
@@ -21,6 +22,15 @@ const AppRoutes = () => {
         element={
           <ProtectedRoute>
             <DashboardPage />
+          </ProtectedRoute>
+        }
+      />
+
+      <Route
+        path="/settings"
+        element={
+          <ProtectedRoute>
+            <SettingsPage />
           </ProtectedRoute>
         }
       />

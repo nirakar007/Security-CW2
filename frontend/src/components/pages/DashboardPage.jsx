@@ -1,6 +1,8 @@
 import { useEffect, useState } from "react";
+import { Link } from "react-router-dom";
 import apiClient from "../../api/apiClient";
 import { useAuth } from "../context/authContext";
+import UpgradeCard from "../payment/UpgradeCard";
 import FileList from "../uploads/FileList";
 import UploadForm from "../uploads/UploadForm";
 
@@ -41,18 +43,29 @@ const DashboardPage = () => {
               This is your secure dashboard.
             </p>
           </div>
-          <button
-            onClick={logout}
-            className="px-6 py-2 font-bold rounded-lg text-white bg-red-600 hover:bg-red-700 transition-all duration-300 transform hover:scale-105 shadow-lg"
-          >
-            Logout
-          </button>
+          <div className="flex items-center gap-4">
+            {" "}
+            {/* <-- Wrapper div */}
+            <Link
+              to="/settings"
+              className="font-semibold text-slate-300 hover:text-white transition-colors"
+            >
+              Account Settings
+            </Link>
+            <button
+              onClick={logout}
+              className="px-6 py-2   font-bold rounded-lg text-white bg-red-600 hover:bg-red-700 transition-all duration-300 transform hover:scale-105 shadow-lg"
+            >
+              Logout
+            </button>
+          </div>
         </header>
 
         {/* Main Content Grid */}
         <main className="grid grid-cols-1 lg:grid-cols-5 gap-10">
           <div className="lg:col-span-2">
             <UploadForm onUploadSuccess={onUploadSuccess} />
+            {user && user.role !== "PRO" && <UpgradeCard />}
           </div>
           <div className="lg:col-span-3">
             <h2 className="text-3xl font-bold mb-4">Your Files</h2>

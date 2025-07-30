@@ -1,35 +1,19 @@
-// Configures 'multer' for handling file uploads
 const multer = require("multer");
 const path = require("path");
+const User = require("../models/User"); // The critical missing line
 
-
-// Define storage configuration (we'll keep it simple for now)
+// Reusable storage and file type checker
 const storage = multer.diskStorage({
-  destination: "./secure_uploads/", // IMPORTANT: This folder should be in your .gitignore!
-  filename: function (req, file, cb) {
-    // Create a unique filename to prevent overwrites
+  destination: "./secure_uploads/",
+  filename: (req, file, cb) => {
     cb(null, "file-" + Date.now() + path.extname(file.originalname));
   },
 });
 
-// Define the upload middleware with security checks
-const upload = multer({
-  storage: storage,
-  limits: { fileSize: 10000000 }, // Limit file size to 10MB
-  fileFilter: function (req, file, cb) {
-    checkFileType(file, cb);
-  },
-}).single("secureFile"); // 'secureFile' is the name of the form field
-
-// Function to check file type
 function checkFileType(file, cb) {
-  // Allowed extensions
   const filetypes = /jpeg|jpg|png|gif|pdf|doc|docx|zip/;
-  // Check extension
   const extname = filetypes.test(path.extname(file.originalname).toLowerCase());
-  // Check mime type
   const mimetype = filetypes.test(file.mimetype);
-
   if (mimetype && extname) {
     return cb(null, true);
   } else {
@@ -42,4 +26,49 @@ function checkFileType(file, cb) {
   }
 }
 
-module.exports = upload;
+// This is our single, intelligent middleware export
+const fileUploadMiddleware = async (req, res, next) => {
+  try {
+    const user = await User.findById(req.user.id);
+    if (!user) {
+      return res.status(404).json({ msg: "User not found." });
+    }
+    const isProUser = user.role === "PRO";
+
+    // --- NEW TIER LIMITS ---
+    const freeTierLimit = 2500000; // 2.5MB in bytes
+    const proTierLimit = 5000000; // 5.0MB in bytes
+    const userLimit = isProUser ? proTierLimit : freeTierLimit;
+    // -----------------------
+
+    const upload = multer({
+      storage: storage,
+      limits: { fileSize: userLimit },
+      fileFilter: (req, file, cb) => {
+        checkFileType(file, cb);
+      },
+    }).single("secureFile");
+
+    upload(req, res, (err) => {
+      if (err instanceof multer.MulterError) {
+        if (err.code === "LIMIT_FILE_SIZE") {
+          // --- UPDATE THE ERROR MESSAGES ---
+          return res.status(402).json({
+            msg: isProUser
+              ? `File exceeds your 5MB Pro limit.`
+              : `File exceeds 2.5MB free limit. Upgrade to Pro to upload files up to 5MB.`,
+            upgradeRequired: !isProUser,
+          });
+        }
+      } else if (err) {
+        return res.status(400).json({ msg: err.message });
+      }
+      next();
+    });
+  } catch (error) {
+    console.error("Error in fileUploadMiddleware:", error);
+    res.status(500).send("Server Error");
+  }
+};
+
+module.exports = fileUploadMiddleware;

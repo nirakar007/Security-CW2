@@ -85,7 +85,7 @@ exports.login = async (req, res) => {
       return res.status(400).json({ msg: "Invalid Credentials" });
     }
 
-    // 2. Check for an ACTIVE lockout immediately after finding the user
+    // 2. Check for an active lockout immediately after finding the user
     if (user.lockoutUntil && user.lockoutUntil > Date.now()) {
       return res.status(403).json({
         msg: `Account is locked due to too many failed attempts.`,
