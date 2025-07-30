@@ -2,6 +2,7 @@
 // server/controllers/paymentController.js
 const stripe = require("stripe")(process.env.STRIPE_SECRET_KEY);
 const User = require("../models/User");
+const Transaction = require("../models/Transaction");
 
 // Create a checkout session
 exports.createCheckoutSession = async (req, res) => {

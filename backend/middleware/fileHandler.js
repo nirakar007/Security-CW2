@@ -33,6 +33,10 @@ const fileUploadMiddleware = async (req, res, next) => {
     if (!user) {
       return res.status(404).json({ msg: "User not found." });
     }
+    console.log("--- CHECKING USER ROLE ---");
+    console.log("User found in DB:", user);
+    console.log("User role:", user ? user.role : "USER NOT FOUND");
+    console.log("-------------------------");
     const isProUser = user.role === "PRO";
 
     // --- NEW TIER LIMITS ---

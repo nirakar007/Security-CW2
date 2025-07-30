@@ -84,6 +84,7 @@ const SettingsPage = () => {
 
   useEffect(() => {
     const fetchData = async () => {
+      setIsLoading(true);
       try {
         const [transRes, logsRes] = await Promise.all([
           apiClient.get("/payment/transactions"),
@@ -98,6 +99,13 @@ const SettingsPage = () => {
       }
     };
     fetchData();
+    // to re-fetch data whenever the window gains focus : handles the case where the user navigates away and then comes back.
+    window.addEventListener("focus", fetchData);
+    // Cleanup function: It's crucial to remove the event listener
+    // when the component unmounts to prevent memory leaks
+    return () => {
+      window.removeEventListener("focus", fetchData);
+    };
   }, []);
 
   const isProUser = user && user.role === "PRO";
@@ -172,7 +180,7 @@ const SettingsPage = () => {
                 <Clock className="h-5 w-5 text-gray-400" /> Activity Log
               </h2>
               {isLoading ? (
-                <p>Loading...</p>
+                <p>Refreshing data...</p>
               ) : activityLogs.length > 0 ? (
                 <div className="space-y-4 max-h-80 overflow-y-auto">
                   {activityLogs.map((log) => (
