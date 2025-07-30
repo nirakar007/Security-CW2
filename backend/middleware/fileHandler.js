@@ -36,8 +36,20 @@ const fileUploadMiddleware = async (req, res, next) => {
     console.log("--- CHECKING USER ROLE ---");
     console.log("User found in DB:", user);
     console.log("User role:", user ? user.role : "USER NOT FOUND");
-    console.log("-------------------------");
     const isProUser = user.role === "PRO";
+
+    if (
+      isProUser &&
+      user.proSubscriptionExpires &&
+      user.proSubscriptionExpires < new Date()
+    ) {
+      // The subscription has expired!
+      console.log(`User ${user.email}'s Pro subscription has expired.`);
+      user.role = "USER"; // Revert role to USER
+      await user.save();
+      isProUser = false; // Update the flag for the current request
+    }
+    
 
     // --- NEW TIER LIMITS ---
     const freeTierLimit = 2500000; // 2.5MB in bytes

@@ -176,7 +176,7 @@ const SettingsPage = () => {
             </section>
 
             <section className="bg-slate-800 p-6 rounded-xl">
-              <h2 className="text-xl font-bold mb-4 flex items-center gap-2">
+              <h2 className="text-xl font-bold mb-4 flex items-center gap-2 border-b border-slate-700 pb-4">
                 <Clock className="h-5 w-5 text-gray-400" /> Activity Log
               </h2>
               {isLoading ? (

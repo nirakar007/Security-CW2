@@ -7,6 +7,7 @@ const {
   createCheckoutSession,
   stripeWebhook,
   getUserTransactions,
+  simulateUpgrade,
 } = require("../controllers/paymentController");
 
 // @route   POST /api/payment/create-checkout-session
@@ -27,5 +28,10 @@ router.post(
 // @desc    Get a user's payment history
 // @access  Private
 router.get("/transactions", authMiddleware, getUserTransactions);
+
+// @route   POST /api/payment/simulate-upgrade
+// @desc    Simulates a successful payment to upgrade a user to Pro
+// @access  Private
+router.post("/simulate-upgrade", authMiddleware, simulateUpgrade);
 
 module.exports = router;

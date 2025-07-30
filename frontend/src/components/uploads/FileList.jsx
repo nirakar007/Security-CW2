@@ -47,8 +47,14 @@ const FileList = ({ files }) => {
 
   if (!files || files.length === 0) {
     return (
-      <div className="flex items-center justify-center h-full min-h-[200px] text-center py-10 px-6 bg-[#0f172a] rounded-xl">
-        <p className="text-slate-400 text-lg">
+      <div
+        className="flex items-center justify-center h-full min-h-[200px] text-center py-10 px-6 rounded-xl"
+        style={{
+          background:
+            "linear-gradient(135deg, rgba(255, 255, 255, 0.1) 0%, transparent 50%, rgba(255, 255, 255, 0.05) 100%)",
+        }}
+      >
+        <p className="text-slate-100 text-lg">
           You haven't uploaded any files yet.
         </p>
       </div>
@@ -96,7 +102,13 @@ const FileList = ({ files }) => {
     <>
       {link && <LinkModal />}
 
-      <div className="bg-slate-800 rounded-lg shadow-inner overflow-hidden">
+      <div
+        className="bg-slate-800 rounded-lg shadow-inner overflow-hidden"
+        style={{
+          background:
+            "linear-gradient(135deg, rgba(255, 255, 255, 0.1) 0%, transparent 50%, rgba(255, 255, 255, 0.05) 100%)",
+        }}
+      >
         <div className="overflow-x-auto">
           <table className="min-w-full text-left text-sm whitespace-nowrap">
             <thead className="bg-slate-900/50 uppercase tracking-wider text-slate-400">
@@ -135,7 +147,7 @@ const FileList = ({ files }) => {
                   <td className="p-4">
                     <button
                       onClick={() => handleGetLink(file._id)}
-                      className="font-semibold text-blue-500 hover:text-blue-400"
+                      className="font-semibold text-blue-500 hover:text-blue-400 underline"
                     >
                       Get Link
                     </button>

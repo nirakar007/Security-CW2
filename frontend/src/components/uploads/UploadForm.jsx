@@ -55,54 +55,97 @@ const UploadForm = ({ onUploadSuccess }) => {
   };
 
   return (
-    <div className="w-full p-8 space-y-6 bg-[#0f172a] rounded-xl shadow-lg">
-      <h2 className="text-3xl font-bold text-white">Upload a Secure File</h2>
-      <form onSubmit={onSubmit} className="space-y-6">
-        <div className="flex items-center space-x-4">
-          <label
-            htmlFor="file-upload"
-            className="flex-shrink-0 cursor-pointer px-5 py-2.5 font-semibold rounded-lg text-white bg-blue-600 hover:bg-blue-700 transition-colors"
+    <div
+      className="w-full max-w-md p-8 space-y-6 rounded-xl shadow-2xl backdrop-blur-xl border border-white/20 relative overflow-hidden"
+      style={{
+        background: "rgba(15, 23, 42, 0.4)",
+        backdropFilter: "blur(20px)",
+        WebkitBackdropFilter: "blur(20px)",
+      }}
+    >
+      {/* Glass reflection effect */}
+      <div
+        className="absolute inset-0 rounded-xl opacity-30"
+        style={{
+          background:
+            "linear-gradient(135deg, rgba(255, 255, 255, 0.1) 0%, transparent 50%, rgba(255, 255, 255, 0.05) 100%)",
+        }}
+      />
+
+      <div className="relative z-10">
+        <h2 className="text-3xl font-bold text-white mb-6">
+          Upload a Secure File
+        </h2>
+
+        <div className="space-y-6">
+          <div className="flex items-center space-x-4">
+            <label
+              htmlFor="file-upload"
+              className="flex-shrink-0 cursor-pointer px-5 py-2.5 font-semibold rounded-lg text-white bg-white/10 hover:bg-white/20 backdrop-blur-sm border border-white/20 transition-all duration-200"
+            >
+              Choose File
+            </label>
+            <input
+              id="file-upload"
+              type="file"
+              onChange={onFileChange}
+              className="hidden"
+            />
+            <span className="text-slate-300 truncate">
+              {file ? file.name : "No file chosen"}
+            </span>
+          </div>
+
+          <button
+            onClick={onSubmit}
+            disabled={isLoading}
+            className="w-full mt-4 py-3 px-4 flex justify-center items-center gap-2 font-bold rounded-lg text-white bg-white/10 hover:bg-white/20 disabled:bg-white/5 disabled:cursor-not-allowed backdrop-blur-sm border border-white/20 transition-all duration-200"
           >
-            Choose File
-          </label>
-          <input
-            id="file-upload"
-            type="file"
-            onChange={onFileChange}
-            className="hidden"
-          />
-          <span className="text-slate-400 truncate">
-            {file ? file.name : "No file chosen"}
-          </span>
+            <UploadCloud className="h-5 w-5" />
+            {isLoading ? "Uploading..." : "Upload"}
+          </button>
         </div>
-        <button
-          type="submit"
-          disabled={isLoading}
-          className="w-full mt-4 py-3 px-4 flex justify-center items-center gap-2 font-bold rounded-lg text-white bg-blue-700 hover:bg-blue-800 disabled:bg-slate-600 disabled:cursor-not-allowed transition-colors"
-        >
-          <UploadCloud className="h-5 w-5" />
-          {isLoading ? "Uploading..." : "Upload"}
-        </button>
-      </form>
-      {showUpgrade && (
-        <div className="mt-4">
-          <p className="text-center text-sm text-yellow-400 mb-2">
-            Upgrade required for files over 10MB.
+
+        {showUpgrade && (
+          <div className="mt-4 p-4 rounded-lg bg-yellow-500/10 border border-yellow-500/20 backdrop-blur-sm">
+            <p className="text-center text-sm text-yellow-300 mb-2">
+              Upgrade required for files over 10MB.
+            </p>
+          </div>
+        )}
+
+        {status.message && (
+          <p
+            className={`mt-4 text-center text-sm ${
+              status.isError ? "text-red-300" : "text-green-300"
+            }`}
+          >
+            {status.message}
           </p>
-          {/* Here you could link to a pricing page or directly trigger the payment flow */}
-          {/* For now, we'll just show the user needs to upgrade. */}
-          {/* In a real app, you would render the <UpgradeCard /> here or navigate. */}
-        </div>
-      )}
-      {status.message && (
-        <p
-          className={`mt-4 text-center text-sm ${
-            status.isError ? "text-red-400" : "text-green-400"
-          }`}
-        >
-          {status.message}
-        </p>
-      )}
+        )}
+      </div>
+
+      {/* Additional glass shine effect */}
+      <div
+        className="absolute top-0 left-0 w-full h-full rounded-xl opacity-20 pointer-events-none"
+        style={{
+          background:
+            "linear-gradient(135deg, rgba(255, 255, 255, 0.2) 0%, transparent 30%, transparent 70%, rgba(255, 255, 255, 0.1) 100%)",
+        }}
+      />
+
+      {/* Custom CSS for border glow animation */}
+      <style jsx>{`
+        @keyframes borderGlow {
+          0%,
+          100% {
+            background-position: 0% 50%;
+          }
+          50% {
+            background-position: 100% 50%;
+          }
+        }
+      `}</style>
     </div>
   );
 };

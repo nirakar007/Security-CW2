@@ -43,6 +43,9 @@ const UserSchema = new mongoose.Schema(
     otpExpires: {
       type: Date,
     },
+    proSubscriptionExpires: {
+      type: Date,
+    },
   },
   { timestamps: true }
 ); // Adds createdAt and updatedAt fields

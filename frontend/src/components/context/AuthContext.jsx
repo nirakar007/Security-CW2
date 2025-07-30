@@ -5,7 +5,7 @@ import apiClient from "../../api/apiClient"; // We need our axios instance
 const AuthContext = createContext(null);
 
 export const useAuth = () => useContext(AuthContext);
-  
+
 export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
   const [isLoading, setIsLoading] = useState(true); // Start as true to check auth status
@@ -42,7 +42,7 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
-  const value = { user, isLoading, login, logout };
+  const value = { user, isLoading, login, logout, checkAuthStatus };
 
   // We don't render the app until we know if the user is logged in or not
   return (

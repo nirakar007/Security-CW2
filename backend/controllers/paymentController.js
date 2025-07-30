@@ -3,6 +3,7 @@
 const stripe = require("stripe")(process.env.STRIPE_SECRET_KEY);
 const User = require("../models/User");
 const Transaction = require("../models/Transaction");
+const logActivity = require("../utils/logger");
 
 // Create a checkout session
 exports.createCheckoutSession = async (req, res) => {
@@ -97,6 +98,66 @@ exports.getUserTransactions = async (req, res) => {
     res.status(200).json(transactions);
   } catch (err) {
     console.error(err.message);
+    res.status(500).send("Server Error");
+  }
+};
+
+exports.simulateUpgrade = async (req, res) => {
+  // --- 1. GET planName FROM THE REQUEST BODY ---
+  const { planName } = req.body;
+
+  // --- 2. VALIDATE THE INPUT ---
+  // A simple check to ensure it's a non-empty string and not excessively long
+  if (!planName || typeof planName !== "string" || planName.length > 50) {
+    return res.status(400).json({ msg: "Please select a valid plan." });
+  }
+
+  try {
+    const userId = req.user.id;
+    const user = await User.findById(userId);
+
+    if (user.role === "PRO") {
+      return res
+        .status(400)
+        .json({ msg: "This account is already a Pro account." });
+    }
+
+    const expiryDate = new Date();
+    expiryDate.setDate(expiryDate.getDate() + 30);
+
+    await User.findByIdAndUpdate(userId, {
+      role: "PRO",
+      proSubscriptionExpires: expiryDate,
+    });
+
+    const fakeTransaction = new Transaction({
+      user: userId,
+      stripeSessionId: `sim_${Date.now()}`,
+      amount: 500, // We can keep a static amount for the simulation
+      currency: "usd",
+      productName: `SecureSend Pro (${planName})`, // <-- 3. INCLUDE planName in the record
+      status: "completed",
+    });
+    await fakeTransaction.save();
+
+    await logActivity(
+      userId,
+      "USER_UPGRADED_PRO_SIMULATED",
+      `Upgraded to Pro Plan: ${planName}`,
+      req.ip
+    );
+
+    const updatedUser = await User.findById(userId).select("-password");
+
+    // --- 4. REFLECT THE planName IN THE RESPONSE (THIS IS THE XSS VECTOR) ---
+    res
+      .status(200)
+      .json({
+        msg: `Successfully upgraded to the "${planName}" plan for 30 days.`,
+        user: updatedUser,
+      });
+  } catch (err) {
+    console.error("Error in simulateUpgrade:", err.message);
     res.status(500).send("Server Error");
   }
 };
