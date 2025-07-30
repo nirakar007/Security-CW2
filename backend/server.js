@@ -9,6 +9,7 @@ const helmet = require("helmet");
 connectDB();
 
 const app = express();
+app.set("trust proxy", 1); // <-- Trust first proxy
 app.use(helmet()); // <-- Using helmet to set secure HTTP headers
 
 app.use(express.json({ limit: "6mb" }));
@@ -30,6 +31,7 @@ app.get("/", (req, res) => res.send("API Running"));
 // Define Routes
 app.use("/api/auth", require("./routes/authRoutes"));
 app.use("/api/files", require("./routes/fileRoutes"));
+app.use("/api/user", require("./routes/userRoutes"));
 
 const PORT = process.env.PORT || 5001;
 

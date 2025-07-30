@@ -181,7 +181,7 @@ function LoginPage() {
         <button
           type="submit"
           disabled={isLoading || lockout.isLocked} // Disable button during lockout
-          className="group w-full flex justify-center items-center py-4 px-6 border-0 text-sm font-bold rounded-xl text-white bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 focus:outline-none focus:ring-4 focus:ring-blue-500/30 disabled:opacity-50 disabled:cursor-not-allowed transform transition-all duration-300 ease-out shadow-lg hover:shadow-xl hover:-translate-y-0.5 hover:shadow-blue-500/25"
+          className="group w-full flex justify-center items-center mb-2 py-4 px-6 border-0 text-sm font-bold rounded-xl text-white bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 focus:outline-none focus:ring-4 focus:ring-blue-500/30 disabled:opacity-50 disabled:cursor-not-allowed transform transition-all duration-300 ease-out shadow-lg hover:shadow-xl hover:-translate-y-0.5 hover:shadow-blue-500/25"
         >
           <span className="flex items-center gap-3">
             {isLoading && <Spinner />}
@@ -195,6 +195,12 @@ function LoginPage() {
             </span>
           </span>
         </button>
+        <Link
+          to="/forgot-password"
+          className="text-sm font-medium text-blue-400 hover:underline"
+        >
+          Forgot Password?
+        </Link>
       </div>
     </form>
   );

@@ -5,6 +5,7 @@ const path = require("path");
 const { v4: uuidv4 } = require("uuid");
 const axios = require("axios");
 const FormData = require("form-data");
+const logActivity = require("../utils/logger");
 
 // @desc    Upload a file
 // @route   POST /api/files
@@ -72,6 +73,12 @@ exports.uploadFile = async (req, res) => {
     });
 
     await newFile.save();
+    await logActivity(
+      req.user.id,
+      "FILE_UPLOAD",
+      `Uploaded file: ${newFile.originalName}`,
+      req.ip
+    );
 
     res
       .status(201)
@@ -130,6 +137,13 @@ exports.generateDownloadLink = async (req, res) => {
     file.downloadExpires = Date.now() + 24 * 60 * 60 * 1000;
 
     await file.save();
+    // ... inside generateDownloadLink, after file.save()
+    await logActivity(
+      req.user.id,
+      "LINK_GENERATED",
+      `Generated link for: ${file.originalName}`,
+      req.ip
+    );
 
     const downloadLink = `${req.protocol}://${req.get(
       "host"

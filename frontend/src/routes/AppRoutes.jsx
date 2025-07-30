@@ -6,6 +6,7 @@ import DashboardPage from "../components/pages/DashboardPage";
 import HomePage from "../components/pages/HomePage";
 import LoginPage from "../components/pages/LoginPage";
 // import NotFoundPage from "../components/pages/NotFoundPage";
+import ForgotPasswordPage from "../components/pages/ForgotPasswordPage";
 import RegisterPage from "../components/pages/RegisterPage";
 import SettingsPage from "../components/pages/SettingsPage";
 
@@ -34,6 +35,8 @@ const AppRoutes = () => {
           </ProtectedRoute>
         }
       />
+
+      <Route path="/forgot-password" element={<ForgotPasswordPage />} />
 
       {/* A catch-all route for 404 Not Found pages */}
       {/* <Route path="*" element={<NotFoundPage />} /> */}

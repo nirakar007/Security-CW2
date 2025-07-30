@@ -8,6 +8,8 @@ const {
   login,
   logout,
   verifyOtp,
+  forgotPassword,
+  resetPassword,
 } = require("../controllers/authController");
 const authLimiter = require("../middleware/rateLimiter");
 
@@ -40,5 +42,15 @@ router.get("/me", authMiddleware, async (req, res) => {
 // @route   POST /api/auth/logout
 // @desc    logout from the account
 router.post("/logout", authMiddleware, logout);
+
+// @route   POST /api/auth/forgot-password
+// @desc    Sends a password reset OTP to the user's email
+// @access  Public
+router.post("/forgot-password", forgotPassword);
+
+// @route   POST /api/auth/reset-password
+// @desc    Resets the password using a valid OTP
+// @access  Public
+router.post("/reset-password", resetPassword);
 
 module.exports = router;
