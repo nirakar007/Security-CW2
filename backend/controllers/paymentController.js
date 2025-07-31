@@ -14,17 +14,16 @@ exports.createCheckoutSession = async (req, res) => {
       line_items: [
         {
           price_data: {
-            currency: "usd",
+            currency: "npr",
             product_data: {
               name: "SecureSend Pro",
               description: "Unlock larger file uploads and more features.",
             },
-            unit_amount: 500, // Amount in cents ($5.00)
+            unit_amount: 500,
           },
           quantity: 1,
         },
       ],
-      // We embed the user's ID here so we know who to upgrade after a successful payment
       metadata: {
         userId: req.user.id,
       },
@@ -45,7 +44,6 @@ exports.stripeWebhook = async (req, res) => {
   let event;
 
   try {
-    // Verify the event is genuinely from Stripe using the webhook secret
     event = stripe.webhooks.constructEvent(
       req.body,
       sig,
@@ -150,12 +148,10 @@ exports.simulateUpgrade = async (req, res) => {
     const updatedUser = await User.findById(userId).select("-password");
 
     // --- 4. REFLECT THE planName IN THE RESPONSE (THIS IS THE XSS VECTOR) ---
-    res
-      .status(200)
-      .json({
-        msg: `Successfully upgraded to the "${planName}" plan for 30 days.`,
-        user: updatedUser,
-      });
+    res.status(200).json({
+      msg: `Successfully upgraded to the "${planName}" plan for 30 days.`,
+      user: updatedUser,
+    });
   } catch (err) {
     console.error("Error in simulateUpgrade:", err.message);
     res.status(500).send("Server Error");

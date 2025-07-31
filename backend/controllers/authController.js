@@ -64,7 +64,7 @@ exports.register = async (req, res) => {
         res.cookie("token", token, {
           httpOnly: true,
           secure: process.env.NODE_ENV === "production",
-          sameSite: "strict",
+          sameSite: "lax",
           maxAge: 30 * 60 * 1000,
         });
         res.status(201).json({ msg: "User registered successfully" });
@@ -126,7 +126,7 @@ exports.login = async (req, res) => {
           .json({ msg: "Could not send OTP. Please try again later." });
       }
     } else {
-      // --- PASSWORD IS INCORRECT ---
+      // incorrect password
       const maxAttempts =
         parseInt(process.env.ACCOUNT_LOCKOUT_ATTEMPTS, 10) || 3;
 
@@ -146,7 +146,6 @@ exports.login = async (req, res) => {
           lockoutUntil: lockoutUntil,
         });
       } else {
-        // Just save the new attempt count
         await user.save();
         return res.status(400).json({
           msg: `Invalid Credentials. ${
@@ -218,6 +217,7 @@ exports.logout = (req, res) => {
   res.cookie("token", "none", {
     expires: new Date(Date.now() + 10 * 1000), // Set expiry 10 seconds from now
     httpOnly: true,
+    sameSite: "lax",
   });
   res.status(200).json({ success: true, data: {} });
 };
@@ -228,14 +228,11 @@ exports.forgotPassword = async (req, res) => {
   const { email } = req.body;
   try {
     const user = await User.findOne({ email });
-    // IMPORTANT: Always send a success message, even if the user doesn't exist.
     // This prevents account enumeration attacks.
     if (!user) {
-      return res
-        .status(200)
-        .json({
-          msg: "If a user with that email exists, a password reset OTP has been sent.",
-        });
+      return res.status(200).json({
+        msg: "If a user with that email exists, a password reset OTP has been sent.",
+      });
     }
 
     // Generate a 6-digit OTP for password reset
@@ -257,17 +254,14 @@ exports.forgotPassword = async (req, res) => {
       `Password reset OTP sent.`,
       req.ip
     );
-    res
-      .status(200)
-      .json({
-        msg: "If a user with that email exists, a password reset OTP has been sent.",
-      });
+    res.status(200).json({
+      msg: "If a user with that email exists, a password reset OTP has been sent.",
+    });
   } catch (err) {
     console.error("Forgot Password error:", err.message);
     res.status(500).send("Server Error");
   }
 };
-
 
 // @desc    Reset Password
 // @access  Private
@@ -298,11 +292,9 @@ exports.resetPassword = async (req, res) => {
     const historyLimit = parseInt(process.env.PASSWORD_HISTORY_LIMIT, 10) || 5;
     for (const oldHash of user.passwordHistory.slice(-historyLimit)) {
       if (await bcrypt.compare(newPassword, oldHash)) {
-        return res
-          .status(400)
-          .json({
-            msg: `Cannot reuse one of the last ${historyLimit} passwords.`,
-          });
+        return res.status(400).json({
+          msg: `Cannot reuse one of the last ${historyLimit} passwords.`,
+        });
       }
     }
 

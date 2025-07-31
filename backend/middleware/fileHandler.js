@@ -38,24 +38,20 @@ const fileUploadMiddleware = async (req, res, next) => {
     console.log("User role:", user ? user.role : "USER NOT FOUND");
     const isProUser = user.role === "PRO";
 
+    const freeTierLimit = 2500000; // 2.5MB in bytes
+    const proTierLimit = 5000000; // 5.0MB in bytes
+    const userLimit = isProUser ? proTierLimit : freeTierLimit;
+
     if (
       isProUser &&
       user.proSubscriptionExpires &&
       user.proSubscriptionExpires < new Date()
     ) {
-      // The subscription has expired!
       console.log(`User ${user.email}'s Pro subscription has expired.`);
-      user.role = "USER"; // Revert role to USER
+      user.role = "USER"; // upon subscription expired, revert role to USER
       await user.save();
-      isProUser = false; // Update the flag for the current request
+      isProUser = false; 
     }
-    
-
-    // --- NEW TIER LIMITS ---
-    const freeTierLimit = 2500000; // 2.5MB in bytes
-    const proTierLimit = 5000000; // 5.0MB in bytes
-    const userLimit = isProUser ? proTierLimit : freeTierLimit;
-    // -----------------------
 
     const upload = multer({
       storage: storage,

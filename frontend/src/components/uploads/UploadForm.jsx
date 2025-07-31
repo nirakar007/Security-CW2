@@ -16,9 +16,8 @@ const UploadForm = ({ onUploadSuccess }) => {
     }
   };
 
-  const onSubmit = async (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    setShowUpgrade(false);
 
     if (!file) {
       setStatus({ message: "Please select a file first.", isError: true });
@@ -27,10 +26,11 @@ const UploadForm = ({ onUploadSuccess }) => {
 
     const formData = new FormData();
     formData.append("secureFile", file);
+
     setIsLoading(true);
+    setStatus({ message: "Uploading...", isError: false });
 
     try {
-      setStatus({ message: "Uploading...", isError: false });
       await apiClient.post("/files/upload", formData, {
         headers: { "Content-Type": "multipart/form-data" },
       });
@@ -77,7 +77,7 @@ const UploadForm = ({ onUploadSuccess }) => {
           Upload a Secure File
         </h2>
 
-        <div className="space-y-6">
+        <form className="space-y-6" onSubmit={handleSubmit}>
           <div className="flex items-center space-x-4">
             <label
               htmlFor="file-upload"
@@ -97,14 +97,14 @@ const UploadForm = ({ onUploadSuccess }) => {
           </div>
 
           <button
-            onClick={onSubmit}
+            type="submit"
             disabled={isLoading}
             className="w-full mt-4 py-3 px-4 flex justify-center items-center gap-2 font-bold rounded-lg text-white bg-white/10 hover:bg-white/20 disabled:bg-white/5 disabled:cursor-not-allowed backdrop-blur-sm border border-white/20 transition-all duration-200"
           >
             <UploadCloud className="h-5 w-5" />
             {isLoading ? "Uploading..." : "Upload"}
           </button>
-        </div>
+        </form>
 
         {showUpgrade && (
           <div className="mt-4 p-4 rounded-lg bg-yellow-500/10 border border-yellow-500/20 backdrop-blur-sm">

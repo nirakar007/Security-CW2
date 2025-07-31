@@ -106,9 +106,6 @@ exports.uploadFile = async (req, res) => {
 // @access  Private
 exports.getUserFiles = async (req, res) => {
   try {
-    // req.user.id is available from our authMiddleware
-    // We find all files where the 'owner' field matches the user's ID
-    // We sort by createdAt descending to show the newest files first
     const files = await File.find({ owner: req.user.id }).sort({
       createdAt: -1,
     });
@@ -205,10 +202,9 @@ exports.downloadFile = async (req, res) => {
     // Send the decrypted file content
     res.send(decryptedBuffer);
 
-    // --- DELETE THE FILE AND DATABASE RECORD (ONE-TIME DOWNLOAD) ---
-    // This is a critical security step for a "one-time" service
-    fs.unlinkSync(file.filePath); // Delete file from disk
-    await File.deleteOne({ _id: file._id }); // Delete record from DB
+    // delete the file and database record (one-time download)
+    fs.unlinkSync(file.filePath);
+    await File.deleteOne({ _id: file._id });
   } catch (err) {
     console.error(err.message);
     res
@@ -218,3 +214,15 @@ exports.downloadFile = async (req, res) => {
       );
   }
 };
+
+// const scanResult = await apiInstance.scanFile(fs.createReadStream(filePath));
+
+// // Check if the file is clean
+// if (!scanResult.CleanResult) {
+//   // if not clean, delete the file and send an error
+//   console.log(`Malware detected in file: ${req.file.originalname}. Deleting.`);
+//   fs.unlinkSync(filePath); // delete the infected file
+//   return res.status(400).json({
+//     msg: "Upload failed: Malicious file detected. The file has been deleted.",
+//   });
+// }

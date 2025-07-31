@@ -1,4 +1,4 @@
-import { CheckCircle, Clock, KeyRound, Shield, Star } from "lucide-react";
+import { Clock, KeyRound, Shield, Star } from "lucide-react";
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import apiClient from "../../api/apiClient";
@@ -155,26 +155,6 @@ const SettingsPage = () => {
 
           {/* Right Column for History */}
           <div className="lg:col-span-2 space-y-8">
-            <section className="bg-slate-800 p-6 rounded-xl">
-              <h2 className="text-xl font-bold mb-4 flex items-center gap-2">
-                <CheckCircle className="h-5 w-5 text-green-400" /> Billing
-                History
-              </h2>
-              {isLoading ? (
-                <p>Loading...</p>
-              ) : transactions.length > 0 ? (
-                <div className="overflow-x-auto max-h-60">
-                  <table className="w-full text-left text-sm">
-                    {/* ... table from previous version ... */}
-                  </table>
-                </div>
-              ) : (
-                <p className="text-slate-400 text-sm">
-                  No transaction history.
-                </p>
-              )}
-            </section>
-
             <section className="bg-slate-800 p-6 rounded-xl">
               <h2 className="text-xl font-bold mb-4 flex items-center gap-2 border-b border-slate-700 pb-4">
                 <Clock className="h-5 w-5 text-gray-400" /> Activity Log
