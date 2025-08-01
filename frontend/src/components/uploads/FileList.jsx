@@ -65,7 +65,9 @@ const FileList = ({ files }) => {
   const LinkModal = () => (
     <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50">
       <div className="bg-slate-800 p-8 rounded-lg shadow-xl max-w-lg w-full">
-        <h3 className="text-xl font-bold mb-4">Your Secure Link is Ready</h3>
+        <h3 className="text-xl font-bold mb-4 text-slate-200">
+          Your Secure Link is Ready
+        </h3>
         <p className="text-slate-400 mb-4">
           This is a one-time download link. It will expire in 24 hours and will
           be disabled after the first download.
@@ -75,11 +77,11 @@ const FileList = ({ files }) => {
             type="text"
             value={link}
             readOnly
-            className="bg-transparent text-white w-full outline-none"
+            className="bg-transparent text-blue-400 w-full outline-none"
           />
           <button
             onClick={handleCopyLink}
-            className="p-2 bg-blue-600 rounded-md hover:bg-blue-700"
+            className="p-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
           >
             {copied ? (
               <Check className="h-5 w-5" />
@@ -90,7 +92,7 @@ const FileList = ({ files }) => {
         </div>
         <button
           onClick={() => setLink("")}
-          className="w-full mt-6 py-2 bg-slate-600 rounded-md hover:bg-slate-700"
+          className="w-full mt-6 py-2 bg-slate-600 rounded-md text-slate-300 hover:bg-slate-700"
         >
           Close
         </button>
